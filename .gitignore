@@ -1,0 +1,10 @@
+# Nothing specific yet
+
+# Zipped packages
+*.zip
+*.rar
+*.tar
+*.7z
+*.dmg
+*.gz
+*.iso
