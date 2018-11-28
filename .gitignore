@@ -1,5 +1,8 @@
 # Nothing specific yet
 
+# Readings and stuff
+*.pdf
+
 # Zipped packages
 *.zip
 *.rar
