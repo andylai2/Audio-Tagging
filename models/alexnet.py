@@ -1,5 +1,5 @@
 """
-AlexNet Keras Implementation
+model Keras Implementation
 
 BibTeX Citation:
 
@@ -22,94 +22,61 @@ from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 
-def alexnet_model(img_shape=(224, 224, 3), n_classes=10, l2_reg=0.,
-	weights=None):
+def alexnet(img_shape=(224, 224, 3), n_classes=10, l2_reg=0.):
 
 	# Initialize model
-	alexnet = Sequential()
+	model = Sequential()
 
 	# Layer 1
-	alexnet.add(Conv2D(96, (11, 11), input_shape=img_shape,
+	model.add(Conv2D(96, (11, 11), input_shape=img_shape,
 		padding='same', kernel_regularizer=l2(l2_reg)))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	# Layer 2
-	alexnet.add(Conv2D(256, (5, 5), padding='same'))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Conv2D(256, (5, 5), padding='same'))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	# Layer 3
-	alexnet.add(ZeroPadding2D((1, 1)))
-	alexnet.add(Conv2D(512, (3, 3), padding='same'))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Conv2D(512, (3, 3), padding='same'))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	# Layer 4
-	alexnet.add(ZeroPadding2D((1, 1)))
-	alexnet.add(Conv2D(1024, (3, 3), padding='same'))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Conv2D(1024, (3, 3), padding='same'))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
 
 	# Layer 5
-	alexnet.add(ZeroPadding2D((1, 1)))
-	alexnet.add(Conv2D(1024, (3, 3), padding='same'))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Conv2D(1024, (3, 3), padding='same'))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	# Layer 6
-	alexnet.add(Flatten())
-	alexnet.add(Dense(3072))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(Dropout(0.5))
+	model.add(Flatten())
+	model.add(Dense(3072))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(Dropout(0.5))
 
 	# Layer 7
-	alexnet.add(Dense(4096))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('relu'))
-	alexnet.add(Dropout(0.5))
+	model.add(Dense(4096))
+	model.add(BatchNormalization())
+	model.add(Activation('relu'))
+	model.add(Dropout(0.5))
 
 	# Layer 8
-	alexnet.add(Dense(n_classes))
-	alexnet.add(BatchNormalization())
-	alexnet.add(Activation('softmax'))
+	model.add(Dense(n_classes))
+	model.add(BatchNormalization())
+	model.add(Activation('softmax'))
 
-	if weights is not None:
-		alexnet.load_weights(weights)
-
-	return alexnet
-
-def parse_args():
-	"""
-	Parse command line arguments.
-
-	Parameters:
-		None
-	Returns:
-		parser arguments
-	"""
-	parser = argparse.ArgumentParser(description='AlexNet model')
-	optional = parser._action_groups.pop()
-	required = parser.add_argument_group('required arguments')
-	optional.add_argument('--print_model',
-		dest='print_model',
-		help='Print AlexNet model',
-		action='store_true')
-	parser._action_groups.append(optional)
-	return parser.parse_args()
-
-if __name__ == "__main__":
-	# Command line parameters
-	args = parse_args()
-
-	# Create AlexNet model
-	model = alexnet_model()
-
-	# Print
-	if args.print_model:
-		model.summary()
+	return model
+	
