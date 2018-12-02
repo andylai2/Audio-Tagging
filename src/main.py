@@ -8,7 +8,7 @@ from torch import nn
 from torch import optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import random_split
 from scipy.io import wavfile
 from torchvision import transforms
 from torchvision import models
@@ -20,35 +20,20 @@ from models.network import Net
 config = MfccConfig()
 
 
-def train_val_split(validation_split=0.2, shuffle_dataset=True):
-    """ Util function to generate indices for train/val splits
-    Args:
-        validation_split: validation split size (0.0-1.0)
-        shuffle_dataset: whether dataset should be shuffled
-    Returns:
-        tuple: (training set indices, validation set indices
-    """
-    dataset_size = len(Freesound(mode="train"))
-    indices = list(range(dataset_size))
-    split = int(np.floor(validation_split * dataset_size))
-    if shuffle_dataset:
-        np.random.seed(42)
-        np.random.shuffle(indices)
-    train_indices, val_indices = indices[split:], indices[:split]
-    return train_indices, val_indices
-
-
 def calculate_val_accuracy(valloader):
     """ Util function to calculate val set accuracy,
     both overall and per class accuracy
     Args:
         valloader (torch.utils.data.DataLoader): val set
     Returns:
-        accuracy
+        tuple: (overall accuracy, class level accuracy)
     """
     correct = 0.
     total = 0.
     predictions = []
+
+    class_correct = list(0. for _ in range(config.n_classes))
+    class_total = list(0. for _ in range(config.n_classes))
 
     for data in valloader:
         images, labels = data
@@ -60,7 +45,14 @@ def calculate_val_accuracy(valloader):
         total += labels.size(0)
         correct += (predicted == labels).sum()
 
-    return 100*correct/total
+        c = (predicted == labels).squeeze()
+        for i in range(len(labels)):
+            label = labels[i]
+            class_correct[label] += c[i]
+            class_total[label] += 1
+
+    class_accuracy = 100 * np.divide(class_correct, class_total)
+    return 100*correct/total, class_accuracy
 
 
 transform = transforms.Compose([
@@ -70,15 +62,15 @@ transform = transforms.Compose([
     ])
 
 dataset = Freesound(transform=transform, mode="train")
-train_indices, val_indices = train_val_split()
-train_sampler = SubsetRandomSampler(train_indices)
-val_sampler = SubsetRandomSampler(val_indices)
+train_size = int(0.8 * len(dataset))
+val_size = len(dataset) - train_size
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-trainloader = DataLoader(dataset, batch_size=32,
-                         shuffle=True, num_workers=2, sampler=train_sampler)
+trainloader = DataLoader(train_dataset, batch_size=32,
+                         shuffle=True, num_workers=2)
 
-valloader = DataLoader(dataset, batch_size=256,
-                       shuffle=False, num_workers=2, sampler=val_sampler)
+valloader = DataLoader(val_dataset, batch_size=256,
+                       shuffle=True, num_workers=2)
 
 testloader = DataLoader(Freesound(transform=transform, mode="test"), batch_size=256,
                         shuffle=False, num_workers=2)
@@ -107,7 +99,7 @@ val_accuracy_over_epochs = []
 # ^^^^^^^^^^^^^^^^^^^^
 ########################################################################
 
-for epoch in config.max_epochs:
+for epoch in range(config.max_epochs):
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs
@@ -137,7 +129,7 @@ for epoch in config.max_epochs:
 
     # Scale of 0.0 to 100.0
     # Calculate validation set accuracy of the existing model
-    val_accuracy = calculate_val_accuracy(valloader)
+    val_accuracy, class_accuracy = calculate_val_accuracy(valloader)
     print('Accuracy of the network on the val images: %d %%' % (val_accuracy))
 
     train_loss_over_epochs.append(running_loss)
