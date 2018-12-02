@@ -8,7 +8,7 @@ from scipy.io import wavfile
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
-from src.config import MfccConfig
+from config import MfccConfig
 
 
 class Freesound(Dataset):
@@ -21,7 +21,7 @@ class Freesound(Dataset):
             self.csv_file = pd.read_csv(os.path.join(data_root, "train.csv"))
         elif self.mode is "test":
             self.data_dir = os.path.join(data_root, "audio_test")
-            self.csv_file = pd.read_csv(os.path.join(data_root, "sample_submission.csv"))
+            self.csv_file = pd.read_csv(os.path.join(data_root, "test_post_competition.csv"))
 
         # dict for mapping class names into indices.
         self.classes = {cls_name: i for i, cls_name in enumerate(self.csv_file["label"].unique())}
@@ -53,12 +53,8 @@ class Freesound(Dataset):
         if self.transform is not None:
             data = self.transform(data)
 
-        if self.mode is "train":
-            label = self.classes[self.csv_file["label"][idx]]
-            return data, label
-
-        elif self.mode is "test":
-            return data
+        label = self.classes[self.csv_file["label"][idx]]
+        return data, label
 
 
 if __name__ == '__main__':
