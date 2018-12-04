@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from torch import Tensor
 from scipy.io import wavfile
+from skimage.transform import resize
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
@@ -63,7 +64,8 @@ if __name__ == '__main__':
     tsfm = transforms.Compose([
         transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)), # rescale to -1 to 1
         transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=44100, n_mfcc=40)), # MFCC
-        transforms.ToTensor()
+        transforms.Lambda(lambda x: resize(x, (224, 224), anti_aliasing=True)),
+        transforms.Lambda(lambda x: Tensor(x))
         ])
 
     # todo: multiprocessing, padding data

@@ -7,20 +7,22 @@ import torch
 import torchvision
 import librosa
 import numpy as np
+from skimage.transform import resize
 from torch import Tensor
 from torch import nn
 from torch import optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
-from scipy.io import wavfile
 from torchvision import transforms
 from torchvision import models
 from config import MfccConfig
 from freesound_dataloader import Freesound
 
 
-config = MfccConfig()
+config = MfccConfig(audio_duration=2.6, learning_rate=0.005, max_epochs=20)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 
 
 def calculate_val_accuracy(valloader):
@@ -40,8 +42,10 @@ def calculate_val_accuracy(valloader):
 
     for data in valloader:
         images, labels = data
-        images = images.cuda()
-        labels = labels.cuda()
+        # images = images.cuda()
+        # labels = labels.cuda()
+        images = images.to(device)
+        labels = labels.to(device)
         outputs = net(Variable(images))
         _, predicted = torch.max(outputs.data, 1)
         predictions.extend(list(predicted.cpu().numpy()))
@@ -61,7 +65,8 @@ def calculate_val_accuracy(valloader):
 transform = transforms.Compose([
     transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)),  # rescale to -1 to 1
     transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=config.sampling_rate, n_mfcc=config.n_mfcc)),  # MFCC
-    transforms.ToTensor()
+    transforms.Lambda(lambda x: resize(x, (224, 224), anti_aliasing=True)),
+    transforms.Lambda(lambda x: Tensor(x))
     ])
 
 dataset = Freesound(transform=transform, mode="train")
@@ -69,8 +74,12 @@ train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
+print("dataset size", len(dataset))
+print("train size", train_size)
+print("val size", val_size)
+
 trainloader = DataLoader(train_dataset, batch_size=32,
-                         shuffle=True, num_workers=2)
+                         shuffle=True, num_workers=4)
 
 valloader = DataLoader(val_dataset, batch_size=256,
                        shuffle=False, num_workers=2)
@@ -88,11 +97,12 @@ classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, '
 classes = dict((v, k) for k, v in classes.items())
 
 net = models.AlexNet(num_classes=41)
-net = net.cuda()
+# net = net.cuda()
+net.to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
-# optimizer = optim.Adam(net.parameters(), lr=config.learning_rate)
+# optimizer = optim.Adam(net.parameters(), lr=0.0001)
 
 plt.ioff()
 fig = plt.figure()
@@ -103,6 +113,7 @@ val_accuracy_over_epochs = []
 # Train the network
 # ^^^^^^^^^^^^^^^^^^^^
 ########################################################################
+print("Training Network...")
 
 for epoch in range(config.max_epochs):
     running_loss = 0.0
@@ -110,8 +121,9 @@ for epoch in range(config.max_epochs):
         # get the inputs
         inputs, labels = data
 
-        inputs = inputs.cuda()
-        labels = labels.cuda()
+        # inputs = inputs.cuda()
+        # labels = labels.cuda()
+        inputs, labels = inputs.to(device), labels.to(device)
 
         inputs, labels = Variable(inputs), Variable(labels)
 
@@ -125,7 +137,10 @@ for epoch in range(config.max_epochs):
         optimizer.step()
 
         # print statistics
-        running_loss += loss.data[0]
+        running_loss += loss.item()
+        if i % 10 == 9:  # print every 10 mini-batches
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / (i + 1)))
 
     # Normalizing the loss by the total number of train batches
     running_loss /= len(trainloader)
@@ -135,7 +150,7 @@ for epoch in range(config.max_epochs):
     # Scale of 0.0 to 100.0
     # Calculate validation set accuracy of the existing model
     val_accuracy, class_accuracy = calculate_val_accuracy(valloader)
-    print('Accuracy of the network on the val images: %d %%' % (val_accuracy))
+    print('Accuracy of the network on the val images: %d %%' % val_accuracy)
 
     train_loss_over_epochs.append(running_loss)
     val_accuracy_over_epochs.append(val_accuracy)
@@ -173,13 +188,17 @@ predictions = []
 for data in testloader:
     images, labels = data
 
-    images = images.cuda()
-    labels = labels.cuda()
+    # images = images.cuda()
+    # labels = labels.cuda()
+    images, labels = images.to(device), labels.to(device)
 
     outputs = net(Variable(images))
     _, predicted = torch.max(outputs.data, 1)
     predictions.extend(list(predicted.cpu().numpy()))
     total += labels.size(0)
+
+test_accuracy, class_accuracy = calculate_val_accuracy(testloader)
+print('Accuracy of the network on the test images: %d %%' % test_accuracy)
 
 with open('test.csv', 'w') as csvfile:
     wr = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
