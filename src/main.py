@@ -1,4 +1,8 @@
 import csv
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 import torch
 import torchvision
 import librosa
@@ -14,7 +18,6 @@ from torchvision import transforms
 from torchvision import models
 from config import MfccConfig
 from freesound_dataloader import Freesound
-from models.network import Net
 
 
 config = MfccConfig()
@@ -56,21 +59,21 @@ def calculate_val_accuracy(valloader):
 
 
 transform = transforms.Compose([
-    lambda x: x.astype(np.float32) / np.max(x),  # rescale to -1 to 1
-    lambda x: librosa.feature.mfcc(x, sr=config.sampling_rate, n_mfcc=config.n_mfcc),  # MFCC
-    lambda x: Tensor(x)
+    transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)),  # rescale to -1 to 1
+    transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=config.sampling_rate, n_mfcc=config.n_mfcc)),  # MFCC
+    transforms.ToTensor()
     ])
 
 dataset = Freesound(transform=transform, mode="train")
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 trainloader = DataLoader(train_dataset, batch_size=32,
                          shuffle=True, num_workers=2)
 
 valloader = DataLoader(val_dataset, batch_size=256,
-                       shuffle=True, num_workers=2)
+                       shuffle=False, num_workers=2)
 
 testloader = DataLoader(Freesound(transform=transform, mode="test"), batch_size=256,
                         shuffle=False, num_workers=2)
@@ -84,13 +87,15 @@ classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, '
            'Tambourine': 32, 'Tearing': 13, 'Telephone': 18, 'Trumpet': 2, 'Violin_or_fiddle': 39, 'Writing': 11}
 classes = dict((v, k) for k, v in classes.items())
 
-net = models.alexnet()
+net = models.AlexNet(num_classes=41)
 net = net.cuda()
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
 # optimizer = optim.Adam(net.parameters(), lr=config.learning_rate)
 
+plt.ioff()
+fig = plt.figure()
 train_loss_over_epochs = []
 val_accuracy_over_epochs = []
 
@@ -135,7 +140,26 @@ for epoch in range(config.max_epochs):
     train_loss_over_epochs.append(running_loss)
     val_accuracy_over_epochs.append(val_accuracy)
 
+# Plot train loss over epochs and val set accuracy over epochs
+# Nothing to change here
+# -------------
+plt.subplot(2, 1, 1)
+plt.ylabel('Train loss')
+plt.plot(np.arange(config.max_epochs), train_loss_over_epochs, 'k-')
+plt.title('train loss and val accuracy')
+plt.xticks(np.arange(config.max_epochs, dtype=int))
+plt.grid(True)
+
+plt.subplot(2, 1, 2)
+plt.plot(np.arange(config.max_epochs), val_accuracy_over_epochs, 'b-')
+plt.ylabel('Val accuracy')
+plt.xlabel('Epochs')
+plt.xticks(np.arange(config.max_epochs, dtype=int))
+plt.grid(True)
+plt.savefig("plot.png")
+plt.close(fig)
 print('Finished Training')
+# -------------
 
 ########################################################################
 # Run the network on test data, and create .csv file
@@ -159,6 +183,6 @@ for data in testloader:
 
 with open('test.csv', 'w') as csvfile:
     wr = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
-    wr.writerow(["fname", "prediction"])
-    for l_i, label in enumerate(predictions):
+    wr.writerow(["id", "prediction"])
+    for l_i, label in enumerate(zip(predictions, labels)):
         wr.writerow([str(l_i), classes[label]])

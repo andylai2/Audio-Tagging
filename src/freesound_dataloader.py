@@ -53,6 +53,7 @@ class Freesound(Dataset):
         if self.transform is not None:
             data = self.transform(data)
 
+        data = torch.stack([data] * 3)
         label = self.classes[self.csv_file["label"][idx]]
         return data, label
 
@@ -60,9 +61,9 @@ class Freesound(Dataset):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     tsfm = transforms.Compose([
-        lambda x: x.astype(np.float32) / np.max(x), # rescale to -1 to 1
-        lambda x: librosa.feature.mfcc(x, sr=44100, n_mfcc=40), # MFCC 
-        lambda x: Tensor(x)
+        transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)), # rescale to -1 to 1
+        transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=44100, n_mfcc=40)), # MFCC
+        transforms.ToTensor()
         ])
 
     # todo: multiprocessing, padding data
