@@ -73,6 +73,7 @@ dataset = Freesound(transform=transform, mode="train")
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+test_dataset = Freesound(transform=transform, mode="test")
 
 print("dataset size", len(dataset))
 print("train size", train_size)
@@ -84,7 +85,7 @@ trainloader = DataLoader(train_dataset, batch_size=32,
 valloader = DataLoader(val_dataset, batch_size=256,
                        shuffle=False, num_workers=2)
 
-testloader = DataLoader(Freesound(transform=transform, mode="test"), batch_size=256,
+testloader = DataLoader(test_dataset, batch_size=256,
                         shuffle=False, num_workers=2)
 
 classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, 'Burping_or_eructation': 28,

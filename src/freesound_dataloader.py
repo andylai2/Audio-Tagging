@@ -23,9 +23,12 @@ class Freesound(Dataset):
         elif self.mode is "test":
             self.data_dir = os.path.join(data_root, "audio_test")
             self.csv_file = pd.read_csv(os.path.join(data_root, "test_post_competition.csv"))
+            # ignore rows with label = 'None'
+            self.csv_file = self.csv_file.loc[self.csv_file['label'] != 'None'].reset_index(drop=True)
 
         # dict for mapping class names into indices.
-        self.classes = {cls_name: i for i, cls_name in enumerate(self.csv_file["label"].unique())}
+        # self.classes = {cls_name: i for i, cls_name in enumerate(self.csv_file["label"].unique())}
+        self.classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, 'Burping_or_eructation': 28, 'Bus': 22, 'Cello': 4, 'Chime': 20, 'Clarinet': 7,'Computer_keyboard': 8, 'Cough': 17, 'Cowbell': 33, 'Double_bass': 29, 'Drawer_open_or_close': 36, 'Electric_piano': 34, 'Fart': 14, 'Finger_snapping': 40, 'Fireworks': 31, 'Flute': 16, 'Glockenspiel': 3, 'Gong': 26, 'Gunshot_or_gunfire': 6, 'Harmonica': 25, 'Hi-hat': 0, 'Keys_jangling': 9, 'Knock': 5, 'Laughter': 12, 'Meow': 35, 'Microwave_oven': 27, 'Oboe': 15, 'Saxophone': 1, 'Scissors': 24, 'Shatter': 30, 'Snare_drum': 10, 'Squeak': 23, 'Tambourine': 32, 'Tearing': 13, 'Telephone': 18, 'Trumpet': 2, 'Violin_or_fiddle': 39,  'Writing': 11}
         self.transform = transform
         self.config = config
         
@@ -60,6 +63,8 @@ class Freesound(Dataset):
 
 
 if __name__ == '__main__':
+    import matplotlib
+    matplotlib.use("TkAgg")
     import matplotlib.pyplot as plt
     tsfm = transforms.Compose([
         transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)), # rescale to -1 to 1
@@ -70,15 +75,15 @@ if __name__ == '__main__':
 
     # todo: multiprocessing, padding data
     dataloader = DataLoader(
-        Freesound(transform=tsfm, mode="train"), 
+        Freesound(transform=tsfm, mode="train"),
         batch_size=1,
-        shuffle=True, 
+        shuffle=True,
         num_workers=0)
 
     for index, (data, label) in enumerate(dataloader):
-        print(label.numpy())
+        print(index, label.numpy())
         print(data.shape)
-        plt.imshow(data.numpy()[0, :, :])
+        plt.imshow(data.numpy()[0, 0, :, :])
         plt.show()
 
         if index == 0:
