@@ -130,7 +130,7 @@ for i in range(N_data):
     image_path = os.path.join(spectDir, 'sp_' + dataNames[i][:-4] + '_14.png')
     PIL.Image.fromarray(s_1).convert('L').save(image_path)
    
-    generate square mel spectrograms of size 224x224
+    # generate square mel spectrograms of size 224x224
     
     cc = square_mfcc(y_1,f)
     image_path = os.path.join(mfccDir, 'mfcc_' + dataNames[i][:-4] + '_1.png')
