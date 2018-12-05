@@ -40,6 +40,8 @@ class Freesound(Dataset):
 
         input_length = self.config.audio_length
         rate, data = wavfile.read(os.path.join(self.data_dir, filename))
+        # remove silence
+        data, _ = librosa.effects.trim(data.astype(np.float32))
 
         # Random offset / Padding
         if len(data) > input_length:

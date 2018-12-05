@@ -11,18 +11,30 @@ from skimage.transform import resize
 from torch import Tensor
 from torch import nn
 from torch import optim
+from torch.optim import lr_scheduler
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 from torchvision import transforms
 from torchvision import models
-from config import MfccConfig
+from config import MfccConfig, MelSpecConfig
 from freesound_dataloader import Freesound
 
 
-config = MfccConfig(audio_duration=2.6, learning_rate=0.005, max_epochs=20)
+TRANSFER_LEARNING = True
+
+mean = (0.485+0.456+0.406)/3
+std = (0.229+0.224+0.225)/3
+
+config = MelSpecConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
+
+
+def mel_normalize(x):
+    x = -x/80
+    x = (x-mean)/std
+    return x
 
 
 def calculate_val_accuracy(valloader):
@@ -62,9 +74,18 @@ def calculate_val_accuracy(valloader):
     return 100*correct/total, class_accuracy
 
 
+# transform = transforms.Compose([
+#     transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)),  # rescale to -1 to 1
+#     transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=config.sampling_rate, n_mfcc=config.n_mfcc)),  # MFCC
+#     transforms.Lambda(lambda x: resize(x, (224, 224), anti_aliasing=True)),
+#     transforms.Lambda(lambda x: Tensor(x))
+#     ])
+
 transform = transforms.Compose([
     transforms.Lambda(lambda x: x.astype(np.float32) / np.max(x)),  # rescale to -1 to 1
-    transforms.Lambda(lambda x: librosa.feature.mfcc(x, sr=config.sampling_rate, n_mfcc=config.n_mfcc)),  # MFCC
+    transforms.Lambda(lambda x: librosa.feature.melspectrogram(x, sr=config.sampling_rate, n_mels=config.n_mels)),  # MFCC
+    transforms.Lambda(lambda x: librosa.amplitude_to_db(x, ref=np.max)),
+    transforms.Lambda(lambda x: mel_normalize(x)),
     transforms.Lambda(lambda x: resize(x, (224, 224), anti_aliasing=True)),
     transforms.Lambda(lambda x: Tensor(x))
     ])
@@ -97,13 +118,24 @@ classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, '
            'Tambourine': 32, 'Tearing': 13, 'Telephone': 18, 'Trumpet': 2, 'Violin_or_fiddle': 39, 'Writing': 11}
 classes = dict((v, k) for k, v in classes.items())
 
-net = models.AlexNet(num_classes=41)
-# net = net.cuda()
-net.to(device)
+if TRANSFER_LEARNING:
+    net = models.alexnet(pretrained=True)
+    for param in net.parameters():
+        param.requires_grad = False
+    num_ftrs = net.classifier[6].in_features
+    features = list(net.classifier.children())[:-1]
+    features.extend([nn.Linear(num_ftrs, config.n_classes)])
+    net.classifier = nn.Sequential(*features)
+    net.to(device)
+else:
+    net = models.AlexNet(num_classes=41)
+    net.to(device)
+
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
 # optimizer = optim.Adam(net.parameters(), lr=0.0001)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
 plt.ioff()
 fig = plt.figure()
@@ -118,6 +150,7 @@ print("Training Network...")
 
 for epoch in range(config.max_epochs):
     running_loss = 0.0
+    scheduler.step()
     for i, data in enumerate(trainloader, 0):
         # get the inputs
         inputs, labels = data
@@ -204,5 +237,5 @@ print('Accuracy of the network on the test images: %d %%' % test_accuracy)
 with open('test.csv', 'w') as csvfile:
     wr = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
     wr.writerow(["id", "prediction"])
-    for l_i, label in enumerate(zip(predictions, labels)):
+    for l_i, label in enumerate(predictions):
         wr.writerow([str(l_i), classes[label]])
