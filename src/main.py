@@ -21,7 +21,7 @@ from config import MfccConfig, MelSpecConfig
 from freesound_dataloader import Freesound
 
 
-TRANSFER_LEARNING = False
+TRANSFER_LEARNING = True
 
 mean = (0.485+0.456+0.406)/3
 std = (0.229+0.224+0.225)/3
@@ -91,11 +91,11 @@ transform = transforms.Compose([
     transforms.Lambda(lambda x: Tensor(x))
     ])
 
-dataset = Freesound(transform=transform, mode="train")
+dataset = Freesound(transform=transform, mode="train", config=config)
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-test_dataset = Freesound(transform=transform, mode="test")
+test_dataset = Freesound(transform=transform, mode="test", config=config)
 
 print("dataset size", len(dataset))
 print("train size", train_size)
