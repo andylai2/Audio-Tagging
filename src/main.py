@@ -3,6 +3,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+import sys
+
 import torch
 import torchvision
 import librosa
@@ -26,6 +28,13 @@ TRANSFER_LEARNING = False
 mean = (0.485+0.456+0.406)/3
 std = (0.229+0.224+0.225)/3
 
+if len(sys.argv) == 1:
+    trialID = 'trial_'
+else:
+    trialID = 'trial_' + sys.argv[1]
+
+print(cl_input)
+print(type(cl_input))
 config = MelSpecConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
 # config = MfccConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -235,7 +244,8 @@ for data in testloader:
 test_accuracy, class_accuracy = calculate_val_accuracy(testloader)
 print('Accuracy of the network on the test images: %.3f %%' % test_accuracy)
 
-with open('test.csv', 'w') as csvfile:
+filename = trialID + '.csv'
+with open(filename, 'w+') as csvfile:
     wr = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
     wr.writerow(["id", "prediction"])
     for l_i, label in enumerate(predictions):
