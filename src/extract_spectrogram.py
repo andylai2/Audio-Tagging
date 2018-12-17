@@ -40,9 +40,9 @@ if __name__ == '__main__':
     filenames = os.listdir(root)
     os.chdir(root)
     for wav_file in filenames:
-        feat = extract_mfcc(wav_file)
+        feat = extract_log_spectrogram(wav_file)
         print(np.max(feat), np.min(feat))
         print(feat.shape)
-        display_spectogram(feat)
+        # display_spectogram(feat)
         dest = '../train/' + str(os.path.splitext(wav_file)[0])
         # np.save(dest, feat)
