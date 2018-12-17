@@ -13,7 +13,7 @@ class MfccConfig:
         self.learning_rate = learning_rate
         self.max_epochs = max_epochs
 
-        self.audio_length = self.sampling_rate * self.audio_duration
+        self.audio_length = (int)(self.sampling_rate * self.audio_duration)
         self.dim = (self.n_mfcc, 1 + int(np.floor(self.audio_length/512)), 1)
 
 
@@ -29,4 +29,4 @@ class MelSpecConfig:
         self.learning_rate = learning_rate
         self.max_epochs = max_epochs
 
-        self.audio_length = self.sampling_rate * self.audio_duration
+        self.audio_length = (int)(self.sampling_rate * self.audio_duration)

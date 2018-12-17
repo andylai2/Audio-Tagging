@@ -11,3 +11,5 @@
 *.dmg
 *.gz
 *.iso
+
+data/
