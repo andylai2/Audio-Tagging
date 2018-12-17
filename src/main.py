@@ -34,8 +34,8 @@ if len(sys.argv) == 1:
 else:
     trialID = 'trial_' + sys.argv[1]
     
-config = MelSpecConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
-# config = MfccConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
+config = MelSpecConfig(audio_duration=2, sampling_rate=44100, learning_rate=0.001, max_epochs=20)
+# config = MfccConfig(audio_duration=2, learning_rate=0.001, max_epochs=20)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
@@ -109,7 +109,7 @@ print("dataset size", len(dataset))
 print("train size", train_size)
 print("val size", val_size)
 
-trainloader = DataLoader(train_dataset, batch_size=32,
+trainloader = DataLoader(Freesound(transform=transform, mode="train", config=config), batch_size=32,
                          shuffle=True, num_workers=4)
 
 valloader = DataLoader(val_dataset, batch_size=256,
@@ -143,9 +143,9 @@ else:
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
-# optimizer = optim.Adam(net.parameters(), lr=0.0001)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+# optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
+optimizer = optim.Adam(net.parameters(), lr=0.0001)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=5)
 
 plt.ioff()
 fig = plt.figure()
