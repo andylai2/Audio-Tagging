@@ -1,11 +1,5 @@
-import os
-import numpy as np
-
-import torch
 from torch.optim import Adam
-from torchvision import models
-import visualize_util
-from visualize_util import *
+from visualizer.visualize_util import *
 
 class CNNLayerVisualization():
 	"""Produces an image of the optimal filter for as specific layer"""
@@ -39,7 +33,7 @@ class CNNLayerVisualization():
 		for i in range(1,31):
 			optimizer.zero_grad()
 
-			x =self.processed_image
+			x = self.processed_image
 			for index, layer in enumerate(self.model):
 				x = layer(x)
 				if index == self.selected_layer:
@@ -52,8 +46,6 @@ class CNNLayerVisualization():
 			self.created_image = recreate_image(self.processed_image)
 
 			if i % 5 == 0:
-                im_path = '../generated/layer_vis_l' + str(self.selected_layer) + \
-                    '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
-                save_image(self.created_image, im_path)
-
-
+				im_path = '../generated/layer_vis_l' + str(self.selected_layer) + \
+						  '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
+				save_image(self.created_image, im_path)

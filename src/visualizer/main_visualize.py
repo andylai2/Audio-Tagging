@@ -4,10 +4,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import sys
-import argparse
 
 import torch
-import torchvision
 import librosa
 import numpy as np
 from skimage.transform import resize
@@ -20,9 +18,9 @@ from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 from torchvision import transforms
 from torchvision import models
-from config import MfccConfig, MelSpecConfig
+from config import MelSpecConfig
 from freesound_dataloader import Freesound
-from visualize_layer import CNNLayerVisualization
+from visualizer.visualize_layer import CNNLayerVisualization
 
 
 def mel_normalize(x):
@@ -82,7 +80,7 @@ if __name__ == '__main__':
     else:
     	netID = 'alex' # default to alexnet
         
-    config = MelSpecConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=1)
+    config = MelSpecConfig(audio_duration=2.0, learning_rate=0.0001, max_epochs=20)
     # config = MfccConfig(audio_duration=2.0, learning_rate=0.001, max_epochs=20)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -149,14 +147,16 @@ if __name__ == '__main__':
         net = models.alexnet(num_classes=41)
         net.to(device)
 
+    visualizer = CNNLayerVisualization(net.features, 1, 3)
+    visualizer.visualise_layer_with_hooks()
+    visualizer = CNNLayerVisualization(net.features, 2, 3)
+    visualizer.visualise_layer_with_hooks()
     visualizer = CNNLayerVisualization(net.features, 3, 3)
     visualizer.visualise_layer_with_hooks()
 
-
-
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
-    # optimizer = optim.Adam(net.parameters(), lr=0.0001)
+    # optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
+    optimizer = optim.Adam(net.parameters(), lr=config.learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
     plt.ioff()
