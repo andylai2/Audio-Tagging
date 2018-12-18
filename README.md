@@ -17,11 +17,12 @@ NOTE: implementation of this was not build into main.py
 * scipy
 
 ## Classification without visualization
-Run main.py in ./src. The main function has CUDA support. 
+Run main.py in ./src. The main function has CUDA support and will attempt to run on GPU. 
 
 ### Required libraries:
 * above
 * PyTorch
+* skimage
 
 ## Classification with layer visualization
 Run main_visualize.py in ./src/visualize. CUDA support not build in yet. 

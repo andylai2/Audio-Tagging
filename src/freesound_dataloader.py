@@ -27,7 +27,6 @@ class Freesound(Dataset):
             self.csv_file = self.csv_file.loc[self.csv_file['label'] != 'None'].reset_index(drop=True)
 
         # dict for mapping class names into indices.
-        # self.classes = {cls_name: i for i, cls_name in enumerate(self.csv_file["label"].unique())}
         self.classes = {'Acoustic_guitar': 38, 'Applause': 37, 'Bark': 19, 'Bass_drum': 21, 'Burping_or_eructation': 28, 'Bus': 22, 'Cello': 4, 'Chime': 20, 'Clarinet': 7,'Computer_keyboard': 8, 'Cough': 17, 'Cowbell': 33, 'Double_bass': 29, 'Drawer_open_or_close': 36, 'Electric_piano': 34, 'Fart': 14, 'Finger_snapping': 40, 'Fireworks': 31, 'Flute': 16, 'Glockenspiel': 3, 'Gong': 26, 'Gunshot_or_gunfire': 6, 'Harmonica': 25, 'Hi-hat': 0, 'Keys_jangling': 9, 'Knock': 5, 'Laughter': 12, 'Meow': 35, 'Microwave_oven': 27, 'Oboe': 15, 'Saxophone': 1, 'Scissors': 24, 'Shatter': 30, 'Snare_drum': 10, 'Squeak': 23, 'Tambourine': 32, 'Tearing': 13, 'Telephone': 18, 'Trumpet': 2, 'Violin_or_fiddle': 39,  'Writing': 11}
         self.transform = transform
         self.config = config
@@ -44,17 +43,12 @@ class Freesound(Dataset):
         data, _ = librosa.effects.trim(data.astype(np.float32))
 
         # Random offset / Padding
+        max_offset = abs(len(data) - input_length)
+        offset = np.random.randint(max_offset) if max_offset != 0 else 0
         if len(data) > input_length:
-            max_offset = len(data) - input_length
-            offset = np.random.randint(max_offset)
             data = data[offset:(input_length + offset)]
         else:
-            if input_length > len(data):
-                max_offset = input_length - len(data)
-                offset = np.random.randint(max_offset)
-            else:
-                offset = 0
-            data = np.pad(data, (offset, input_length - len(data) - offset), "constant")
+            data = np.pad(data, (offset, max_offset - offset), "constant")
 
         if self.transform is not None:
             data = self.transform(data)
@@ -75,7 +69,6 @@ if __name__ == '__main__':
         transforms.Lambda(lambda x: Tensor(x))
         ])
 
-    # todo: multiprocessing, padding data
     dataloader = DataLoader(
         Freesound(transform=tsfm, mode="train"),
         batch_size=1,

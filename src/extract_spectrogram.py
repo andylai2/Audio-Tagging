@@ -54,9 +54,9 @@ if __name__ == '__main__':
     os.chdir(root)
     for wav_file in filenames:
         plot_wave(wav_file)
-        feat = extract_mfcc(wav_file)
-        print(np.max(feat), np.min(feat))
-        print(feat.shape)
-        display_mfcc(feat)
+        mfcc = extract_mfcc(wav_file)
+        log_S = extract_log_spectrogram(wav_file)
+        display_mfcc(mfcc)
+        display_spectogram(log_S)
         dest = '../train/' + str(os.path.splitext(wav_file)[0])
         # np.save(dest, feat)

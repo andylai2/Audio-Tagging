@@ -1,10 +1,8 @@
+import sys
 import csv
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-import sys
-import argparse
 
 import torch
 import torchvision
@@ -24,7 +22,7 @@ from config import MfccConfig, MelSpecConfig
 from freesound_dataloader import Freesound
 
 
-TRANSFER_LEARNING = True
+TRANSFER_LEARNING = False
 
 mean = (0.485+0.456+0.406)/3
 std = (0.229+0.224+0.225)/3
@@ -109,7 +107,7 @@ print("dataset size", len(dataset))
 print("train size", train_size)
 print("val size", val_size)
 
-trainloader = DataLoader(Freesound(transform=transform, mode="train", config=config), batch_size=32,
+trainloader = DataLoader(train_dataset, batch_size=32,
                          shuffle=True, num_workers=4)
 
 valloader = DataLoader(val_dataset, batch_size=256,
@@ -145,7 +143,7 @@ else:
 criterion = nn.CrossEntropyLoss()
 # optimizer = optim.SGD(net.parameters(), lr=config.learning_rate, momentum=0.9)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=5)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=7)
 
 plt.ioff()
 fig = plt.figure()
