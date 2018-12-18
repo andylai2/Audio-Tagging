@@ -26,3 +26,6 @@ Run main.py in ./src. The main function has CUDA support and will attempt to run
 
 ## Classification with layer visualization
 Run main_visualize.py in ./src/visualize. CUDA support not build in yet. 
+
+## Matlab
+Matlab code has been deprecated.
